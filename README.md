@@ -1,4 +1,4 @@
-# リポジトリ名
+# コンテナリポジトリのテンプレート
 
 <!-- ![]() -->
 
@@ -6,13 +6,14 @@
 
 ## 概要
 
-[リポジトリの概要一覧]
+- Dockerコンテナ環境を構築するためのテンプレートリポジトリ
+- アプリケーション等を構築する際に利用する
 
 ---
 
 ## 目次
 
-- [リポジトリ名](#リポジトリ名)
+- [コンテナリポジトリのテンプレート](#コンテナリポジトリのテンプレート)
   - [概要](#概要)
   - [目次](#目次)
   - [リポジトリ構成図](#リポジトリ構成図)
@@ -26,6 +27,8 @@
 
 ```md
 .
+├── .devcontainer/
+│   └── devcontainer.json
 ├── .gitlab/
 │   ├── issue_templates/
 │   │   ├── BUG.md
@@ -48,13 +51,19 @@
 │   └── scoop/
 │       ├── PACKAGES.md
 │       └── SCOOP.md
+├── infrastructure/
+│   └── service_name/
+│       └── Dockerfile
+├── .dockerignore
 ├── .env.example
 ├── .gitignore
+├── API.rest
+├── compose.yml
 ├── mise.toml
 └── README.md
 ```
 
-[Tree リンク](https://tree.nathanfriend.com/?s=(%27options!(%27fancy6~fullPath!false~trailingSlash6~rootDot6)~7(%277%27.gitlab0issue4BUG5FEATURE5IMPROVEMENT9FACTOR9SEARCH_SPIKE5TASK20merge_request4DEVELOP5MAIN9LEASE23.vscode0settings.json3docs0common*ENVIRONMENT-BUILDING5GIT5MISE20scoop*PACKAGES5SCOOP23.env.example3.gitignore3mise.toml3README2%27)~version!%271%27)*080382.md3%5Cn4_templates*52*6!true7source!8%20%2095RE%01987654320*)
+[Tree リンク](https://tree.nathanfriend.com/?s=(%27optiJs!(%27fancy7~fullPath!false~trailingSlash7~rootDot7)~8(%278%27.404.jsJXlab0issue5BUG6FEATURE6IMPROVEMENTYFACTORYSEARCH_SPIKE6TASK30mQge_request5DEVELOP6MAINYLEASE32.vscode0settings.jsJ2docs0commJ*ENVIRONMENT-BUILDING6GIT6MISE30scoop*PACKAGES6SCOOP32infrastructure0sQvice_name*DockQfile2.dockQ9.env.exampleX9API.rest2compose.yml2mise.toml2README3%27)~vQsiJ!%271%27)*0W02W2%5Cn3.md4devcJtainQ5_templates*63*7!true8source!9ignore2JonQerW%20%20X2.gitY6RE%01YXWQJ987654320*)
 
 ---
 
