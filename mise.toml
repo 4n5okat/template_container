@@ -1,0 +1,375 @@
+# Mise Task List
+
+#####################################################
+## Common
+#####################################################
+
+#----------------------------------------------------
+### Environment variables
+#----------------------------------------------------
+[env]
+# Loading environment files
+_.file = { path = ".env" }
+
+#----------------------------------------------------
+### Setup
+#----------------------------------------------------
+[tasks.setup]
+description = "Copy the .env.example file to create a .env file. If a .env file already exists, skip this step."
+confirm = "A .env file will be created from .env.example if it does not already exist. Continue?"
+shell = "bash -c"
+run = '''
+    if [ -f .env ]; then
+        echo "The .env file already exists."
+        exit 0
+    fi
+
+    # Copy .env.example to create a new .env file
+    cp .env.example .env
+
+    # Get the current working directory
+    CURRENT_PWD=$(pwd)
+
+    # Determine the value for HOST_PATH
+    if [ -z "$HOST_PATH" ]; then
+        # Running on the host machine
+        FINAL_VAL="${CURRENT_PWD}"
+
+        # Convert Windows-style path (e.g., C:\path) to Unix-style (/c/path)
+        if [[ "$FINAL_VAL" == [A-Z]:* ]]; then
+            DRIVE="${FINAL_VAL%%:*}"
+            REST="${FINAL_VAL#*:}"
+            FINAL_VAL="/${DRIVE,,}${REST//\\//}"
+        fi
+    else
+        # Running inside Docker-outside-of-Docker (DooD)
+        # Combine the parent HOST_PATH with the current relative path
+        BASE_ADJUSTED="${HOST_PATH%/}"
+        RELATIVE_PWD="${CURRENT_PWD#/}"
+        FINAL_VAL="${BASE_ADJUSTED}/${RELATIVE_PWD}"
+    fi
+
+    # Write the HOST_PATH value into .env
+    if grep -q "^HOST_PATH=" .env; then
+        sed -i.bak "s|^HOST_PATH=.*|HOST_PATH=${FINAL_VAL}|" .env && rm .env.bak
+    else
+        echo "HOST_PATH=${FINAL_VAL}" >> .env
+    fi
+
+    echo "HOST_PATH=${FINAL_VAL} has been set in .env"
+'''
+
+#####################################################
+## Docker commands
+#####################################################
+
+#----------------------------------------------------
+### Container Launching and Creation
+#----------------------------------------------------
+[tasks.build]
+description = "Build Docker Compose services"
+depends = ["setup"]
+shell = "bash -c"
+run = '''
+    if [ -f .env ]; then
+        # Export all variables from .env into the current shell session
+        set -a; source .env; set +a
+    fi
+    docker compose build
+'''
+
+[tasks.build-up]
+description = "Build images and start containers in the background"
+depends = ["setup"]
+shell = "bash -c"
+run = '''
+    if [ -f .env ]; then
+        # Export all variables from .env into the current shell session
+        set -a; source .env; set +a
+    fi
+    docker compose up -d --build
+'''
+
+[tasks.up]
+description = "Create and start containers in the foreground"
+depends = ["setup"]
+shell = "bash -c"
+run = '''
+    if [ -f .env ]; then
+        # Export all variables from .env into the current shell session
+        set -a; source .env; set +a
+    fi
+    docker compose up
+'''
+
+[tasks.up-d]
+description = "Create and start containers in the background"
+depends = ["setup"]
+shell = "bash -c"
+run = '''
+    if [ -f .env ]; then
+        # Export all variables from .env into the current shell session
+        set -a; source .env; set +a
+    fi
+    docker compose up -d
+'''
+
+[tasks.profiles-up]
+description = "[profiles-up <profile>]Start only the services defined in the specified Compose profile in the foreground"
+depends = ["setup"]
+shell = "bash -c"
+usage = '''
+arg "profile" help="Compose profile name to start"
+'''
+run = '''
+    if [ -f .env ]; then
+        # Export all variables from .env into the current shell session
+        set -a; source .env; set +a
+    fi
+    echo profile: ${usage_profile}
+    docker compose --profile ${usage_profile:?} up
+'''
+
+[tasks.profiles-up-d]
+description = "[profiles-up <profile>]Start only the services defined in the specified Compose profile in the background"
+depends = ["setup"]
+shell = "bash -c"
+usage = '''
+arg "profile" help="Compose profile name to start"
+'''
+run = '''
+    if [ -f .env ]; then
+        # Export all variables from .env into the current shell session
+        set -a; source .env; set +a
+    fi
+    echo profile: ${usage_profile}
+    docker compose --profile ${usage_profile:?} up -d
+'''
+
+[tasks.create]
+description = "Create containers without starting them"
+depends = ["setup"]
+shell = "bash -c"
+run = '''
+    if [ -f .env ]; then
+        # Export all variables from .env into the current shell session
+        set -a; source .env; set +a
+    fi
+    docker compose create
+'''
+
+[tasks.restart]
+description = "Restart running containers"
+shell = "bash -c"
+run = '''
+    docker compose restart
+'''
+
+#----------------------------------------------------
+### Container Stop/Delete Commands
+#----------------------------------------------------
+
+[tasks.down]
+description = "Stop containers and remove containers and networks"
+shell = "bash -c"
+run = '''
+    docker compose down
+'''
+
+[tasks.rm]
+description = "Remove stopped containers defined in compose.yml (may prompt for confirmation)"
+shell = "bash -c"
+run = '''
+    docker compose rm
+'''
+
+[tasks.down-rmi]
+description = "Remove containers, images, volumes, networks, and orphan containers"
+shell = "bash -c"
+run = '''
+    docker compose down --rmi all --volumes --remove-orphans
+'''
+
+[tasks.down-all]
+description = "Clean up all unused Docker resources (containers, images, volumes, and networks)"
+shell = "bash -c"
+raw = true
+depends = ["down", "down-rmi"]
+run = '''
+    docker system prune --volumes
+'''
+
+#----------------------------------------------------
+### Container Operations
+#----------------------------------------------------
+
+[tasks.kill]
+description = "Force stop containers"
+shell = "bash -c"
+run = '''
+    docker compose kill
+'''
+
+[tasks.start]
+description = "Start existing containers (must be created beforehand)"
+shell = "bash -c"
+run = '''
+    docker compose start
+'''
+
+[tasks.stop]
+description = "Stop running containers"
+shell = "bash -c"
+run = '''
+    docker compose stop
+'''
+
+[tasks.pause]
+description = "Pause running containers (must be unpaused to resume)"
+shell = "bash -c"
+run = '''
+    docker compose pause
+'''
+
+[tasks.unpause]
+description = "Resume paused containers"
+shell = "bash -c"
+run = '''
+    docker compose unpause
+'''
+
+#----------------------------------------------------
+### Container Information
+#----------------------------------------------------
+
+[tasks.logs]
+description = "Show service logs"
+shell = "bash -c"
+run = '''
+    docker compose logs
+'''
+
+[tasks.logs-grep]
+description = "[logs-grep <filter>]Show service logs filtered by a keyword"
+shell = "bash -c"
+usage = '''
+arg "filter" help="Keyword or service name to filter logs"
+'''
+run = '''
+    echo Target Service: ${usage_filter}
+    docker compose logs | grep ${usage_filter:?}
+'''
+
+[tasks.logs-f]
+description = "Follow service logs in real time"
+shell = "bash -c"
+run = '''
+    docker compose logs -f
+'''
+
+[tasks.logs-f-grep]
+description = "[logs-grep <filter>]Follow service logs in real time and filter by a keyword"
+shell = "bash -c"
+usage = '''
+arg "filter" help="Keyword or service name to filter logs"
+'''
+run = '''
+    echo Target Service: ${usage_filter}
+    docker compose logs -f | grep ${usage_filter:?}
+'''
+
+[tasks.ps]
+description = "List containers"
+shell = "bash -c"
+run = '''
+    docker compose ps
+'''
+
+[tasks.top]
+description = "Display running processes of each container"
+shell = "bash -c"
+run = '''
+    docker compose top
+'''
+
+[tasks.config]
+description = "Display the resolved Docker Compose configuration"
+shell = "bash -c"
+run = '''
+    docker compose config
+'''
+
+[tasks.events]
+description = "Stream Docker Compose events"
+shell = "bash -c"
+run = '''
+    docker compose events
+'''
+
+#----------------------------------------------------
+### Docker Utility Commands
+#----------------------------------------------------
+
+[tasks.help]
+description = "Show Docker Compose help"
+shell = "bash -c"
+run = '''
+    docker compose help
+'''
+
+[tasks.version]
+description = "Show Docker Compose version"
+shell = "bash -c"
+run = '''
+    docker compose version
+'''
+
+[tasks.bundle]
+description = "Create a Distributed Application Bundle (DAB)"
+shell = "bash -c"
+run = '''
+    docker compose bundle
+'''
+
+[tasks.images]
+description = "List images used by Compose services"
+shell = "bash -c"
+run = '''
+    docker compose images
+'''
+
+[tasks.pull]
+description = "Pull service images"
+shell = "bash -c"
+run = '''
+    docker compose pull
+'''
+
+#----------------------------------------------------
+### Docker Hub
+#----------------------------------------------------
+
+[tasks.image-push]
+description = "[image-push <image_tag> <dockerfile_path>]Build a container image and push it to Docker Hub"
+shell = "bash -c"
+env.DOCKER_HUB_USER_NAME = {required = true}
+env.DOCKER_HUB_REP = {required = true}
+env.CONTAINER_IMAGE_PLATFORM = {required = true}
+usage = '''
+arg "image_tag" help="Tag name for the container image"
+arg "dockerfile_path" help="Path to the Dockerfile"
+'''
+run = '''
+    echo 'Docker Hub User name: ' $DOCKER_HUB_USER_NAME
+    echo 'Docker Hub repository name: ' $DOCKER_HUB_REP
+    echo 'Container Image Platform: ' $CONTAINER_IMAGE_PLATFORM
+    echo 'Container Image Tag: ' ${usage_image_tag}
+    echo 'Dockerfile path: ' ${usage_dockerfile_path}
+
+    docker build --platform $CONTAINER_IMAGE_PLATFORM -f ./${usage_dockerfile_path} -t "${DOCKER_HUB_USER_NAME}/${DOCKER_HUB_REP}:${usage_image_tag}" .
+    docker push "${DOCKER_HUB_USER_NAME}/${DOCKER_HUB_REP}:${usage_image_tag}"
+'''
+
+#----------------------------------------------------
+### container
+#----------------------------------------------------
